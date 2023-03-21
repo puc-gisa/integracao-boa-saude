@@ -1,0 +1,26 @@
+server:
+  port: ${PORT:8081}
+
+spring:
+  application:
+    name: integracao-boa-saude
+
+  web:
+    locale: pt_BR
+
+  rabbitmq:
+    host: ${MQ_URL:localhost}
+    port: ${MQ_PORT:5672}
+    username: ${MQ_USER:gisa.integracao.boa.saude}
+    password: ${MQ_PASSWORD:guest}
+
+management:
+  endpoint:
+    health:
+      show-details: "ALWAYS"
+  endpoints:
+    web:
+      base-path: /
+      exposure:
+        include: health,info,metrics,logfile
+        exclude:
