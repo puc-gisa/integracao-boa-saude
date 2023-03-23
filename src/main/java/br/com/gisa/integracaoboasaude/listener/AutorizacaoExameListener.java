@@ -12,6 +12,8 @@ import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.core.RabbitMessagingTemplate;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDate;
+
 @Component
 @Slf4j
 @AllArgsConstructor
@@ -24,13 +26,33 @@ public class AutorizacaoExameListener {
     public void onMessage(String payload) throws JsonProcessingException {
         log.info("Receiving message={}", payload);
         AutorizacaoExameRequestMessage request = mapper.readValue(payload, AutorizacaoExameRequestMessage.class);
+        AutorizacaoExameResponseMessage responseMessage = this.process(request);
+        this.sendMessage(Amqp.RESPOSTA_AUTORIZACAO_EXAME_EXCHANGE, responseMessage);
+    }
 
+    private AutorizacaoExameResponseMessage process(AutorizacaoExameRequestMessage request) {
         AutorizacaoExameResponseMessage responseMessage = new AutorizacaoExameResponseMessage();
         responseMessage.setId(request.getId());
-        responseMessage.setDataValidade(request.getDataSolicitacao().toLocalDate().plusDays(45));
-        responseMessage.setCodigoSituacao(SituacaoAutoricacaoExame.AUTORIZADO.getCodigo());
 
-        this.sendMessage(Amqp.RESPOSTA_AUTORIZACAO_EXAME_EXCHANGE, responseMessage);
+        LocalDate dataValidade = null;
+        String justifcatica = null;
+        final SituacaoAutoricacaoExame situacao;
+
+        if (request.getCrmMedicoSolicitante().toUpperCase().endsWith("RJ")) {
+            situacao = SituacaoAutoricacaoExame.NEGADO;
+            justifcatica = "Médico não autorizado";
+        } else if (request.getCodigoExame().toUpperCase().startsWith("A")) {
+            situacao = SituacaoAutoricacaoExame.AUTORIZADO;
+            justifcatica = "Exame previsto em contrato";
+            dataValidade = request.getDataExame().plusDays(45);
+        } else {
+            situacao = SituacaoAutoricacaoExame.EM_ANALISE;
+        }
+
+        responseMessage.setCodigoSituacao(situacao.getCodigo());
+        responseMessage.setDataValidade(dataValidade);
+        responseMessage.setJustificativa(justifcatica);
+        return responseMessage;
     }
 
     private void sendMessage(String exchange, AutorizacaoExameResponseMessage message) throws JsonProcessingException {
