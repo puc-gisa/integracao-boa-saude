@@ -21,13 +21,33 @@ public class AmqpConfig {
     }
 
     @Bean
-    public Queue queue() {
+    public FanoutExchange requestAutorizacaoExameExchange() {
+        return new FanoutExchange(Amqp.SOLICITACAO_AUTORIZACAO_EXAME_EXCHANGE);
+    }
+
+    @Bean
+    public FanoutExchange responseAutorizacaoExameExchange() {
+        return new FanoutExchange(Amqp.RESPOSTA_AUTORIZACAO_EXAME_EXCHANGE);
+    }
+
+    @Bean
+    public Queue queueSolicitacaoAutorizacaoExame() {
+        return new Queue(Amqp.SOLICITACAO_AUTORIZACAO_EXAME_QUEUE);
+    }
+
+    @Bean
+    public Binding bindingSolicitacaoAutorizacaoExame() {
+        return BindingBuilder.bind(queueSolicitacaoAutorizacaoExame()).to(requestAutorizacaoExameExchange());
+    }
+
+    @Bean
+    public Queue associadoNovoQueue() {
         return new Queue(Amqp.ASSOCIADO_NOVO_QUEUE);
     }
 
     @Bean
-    public Binding binding() {
-        return BindingBuilder.bind(queue()).to(createAssociadoExchange());
+    public Binding bindingAssociadoNovo() {
+        return BindingBuilder.bind(associadoNovoQueue()).to(createAssociadoExchange());
     }
 }
 
